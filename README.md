@@ -1,7 +1,7 @@
-MONOLOG DB BUNDLE
+MONOLOG DB HANDLER
 =================
 
-[![Latest Stable Version](https://poser.pugx.org/exbico/monolog-db-bundle/v/stable)](https://packagist.org/packages/exbico/monolog-db-bundle) [![Total Downloads](https://poser.pugx.org/exbico/monolog-db-bundle/downloads)](https://packagist.org/packages/exbico/monolog-db-bundle) [![License](https://poser.pugx.org/drtsb/yii2-seo/license)](https://packagist.org/packages/exbico/monolog-db-bundle)
+[![Latest Stable Version](https://poser.pugx.org/exbico/monolog-db-handler/v/stable)](https://packagist.org/packages/exbico/monolog-db-handler) [![Total Downloads](https://poser.pugx.org/exbico/monolog-db-handler/downloads)](https://packagist.org/packages/exbico/monolog-db-handler) [![License](https://poser.pugx.org/drtsb/yii2-seo/license)](https://packagist.org/packages/exbico/monolog-db-handler)
 
 ## INSTALLATION
 The preferred way to install this extension is through [composer](http://getcomposer.org/download/).
