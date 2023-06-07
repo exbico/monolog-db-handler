@@ -53,4 +53,6 @@ $log->pushHandler($handlerPg);
 You must create table with fields:
 * `level` - varchar
 * `message` - varchar|text
+* `datetime` - datetime
 * `context` - text|json|jsonb
+* `extra` - text|json|jsonb
