@@ -12,40 +12,43 @@ use Throwable;
 
 /**
  * @phpstan-import-type Record from Logger
+ * @phpstan-import-type Level from Logger
  */
-class DbHandler implements HandlerInterface
+final class DbHandler implements HandlerInterface
 {
-    private const INSERT_QUERY = 'INSERT INTO %s (level, message, datetime, context, extra) '
-    . 'VALUES (:level, :message, :datetime, :context, :extra)';
-    private PDO $connection;
     private PDOStatement|false $statement = false;
 
     /**
-     * @param string $dsn
-     * @param string|null $username
-     * @param string|null $password
-     * @param array<string, mixed>|null $options
+     * @param PDO $connection
      * @param int[] $levels
      * @param string $tableName
+     * @phpstan-param Level[] $levels
      */
     public function __construct(
         private array $levels,
-        string $dsn,
-        ?string $username,
-        ?string $password,
-        ?array $options = null,
-        private string $tableName = 'log',
+        private PDO $connection,
+        string $tableName = 'log',
     ) {
         try {
-            $this->connection = new PDO($dsn, $username, $password, $options);
-            $this->statement = $this->connection->prepare(sprintf(self::INSERT_QUERY, $this->tableName));
+            $this->statement = $this->connection->prepare(
+                sprintf(
+                    'INSERT INTO %s (level, message, datetime, context, extra) '
+                    . 'VALUES (:level, :message, :datetime, :context, :extra)',
+                    $tableName,
+                ),
+            );
         } catch (Throwable) {
         }
     }
 
+    /**
+     * @param array $record
+     * @return bool
+     * @phpstan-param array{level: Level} $record
+     */
     public function isHandling(array $record): bool
     {
-        return $this->statement !== false && in_array($record['level'], $this->levels, true);
+        return in_array($record['level'], $this->levels, true);
     }
 
     /**
@@ -55,13 +58,11 @@ class DbHandler implements HandlerInterface
      */
     public function handle(array $record): bool
     {
-        if ($this->isHandling($record)) {
+        if ($this->statement !== false && $this->isHandling($record)) {
             $level = $this->getRecordLevel($record);
             try {
-                /** @phpstan-ignore-next-line */
                 $this->statement->execute(
                     [
-                        /** @phpstan-ignore-next-line */
                         'level'    => Logger::getLevelName($level),
                         'message'  => $this->getRecordMessage($record),
                         'datetime' => $this->getRecordTime($record),
@@ -90,6 +91,7 @@ class DbHandler implements HandlerInterface
      * @param array<string, mixed> $record
      * @return int
      * @phpstan-param Record $record
+     * @phpstan-return Level
      */
     private function getRecordLevel(array $record): int
     {
