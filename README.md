@@ -28,25 +28,20 @@ use Monolog\Logger;
 
 use Exbico\Handler\DbHandler;
 
-$log = new Logger('name');
-
-$handlerMy = new DbHandler(
-    levels:    [Logger::DEBUG],
-    dsn:       'mysql:dbname=exbico;host=127.0.0.1',
-    username:  'username',
-    password:  'password',
-    tableName: 'debug_logs'
-);
-$log->pushHandler($handlerMy);
-
-$handlerPg = new DbHandler(
-    levels:    [400, Logger::CRITICAL, 550, 600],
-    dsn:       'pgsql:dbname=lead_service_log;host=127.0.0.1',
-    username:  'username',
-    password:  'password',
-    options:   [...],
+$log = new Logger('name',[new DbHandler(
+    levels:    [Logger::ERROR, Logger::CRITICAL, Logger::ALERT, Logger::EMERGENCY],
+    connection: new PDO(dsn: 'pgsql:dbname=foo;host=127.0.0.1', username: 'root', password: null),
     tableName: 'errors_logs'
+)]);
+
+$log->pushHandler(
+    new DbHandler(
+        levels:    [Logger::DEBUG],
+        connection: new PDO(dsn: 'mysql:dbname=bar;host=127.0.0.1', username: 'root', password: null),
+        tableName: 'debug_logs'
+    )
 );
+
 $log->pushHandler($handlerPg);
 ```
 
