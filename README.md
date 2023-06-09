@@ -41,8 +41,6 @@ $log->pushHandler(
         tableName: 'debug_logs'
     )
 );
-
-$log->pushHandler($handlerPg);
 ```
 
 You must create table with fields:
