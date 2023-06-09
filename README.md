@@ -24,19 +24,20 @@ to the require section of your application's `composer.json` file.
 ```php
 <?php
 
+use Monolog\Level;
 use Monolog\Logger;
 
 use Exbico\Handler\DbHandler;
 
 $log = new Logger('name',[new DbHandler(
-    levels:    [Logger::ERROR, Logger::CRITICAL, Logger::ALERT, Logger::EMERGENCY],
+    levels:    [Level::Error, Level::Critical, Level::Alert, Level::Emergency],
     connection: new PDO(dsn: 'pgsql:dbname=foo;host=127.0.0.1', username: 'root', password: null),
     tableName: 'errors_logs'
 )]);
 
 $log->pushHandler(
     new DbHandler(
-        levels:    [Logger::DEBUG],
+        levels:    [Level::Debug],
         connection: new PDO(dsn: 'mysql:dbname=bar;host=127.0.0.1', username: 'root', password: null),
         tableName: 'debug_logs'
     )
