@@ -23,10 +23,12 @@ final class DbHandler implements HandlerInterface
     /**
      * @param Connection $connection
      * @param ?DbHandlerConfig $config
+     * @param bool $bubble
      */
     public function __construct(
         private Connection $connection,
         ?DbHandlerConfig $config = null,
+        private bool $bubble = true,
     ) {
         $this->config = $config ?? new DbHandlerConfig();
     }
@@ -67,7 +69,7 @@ final class DbHandler implements HandlerInterface
                 return false;
             }
         }
-        return true;
+        return $this->bubble === false;
     }
 
     public function handleBatch(array $records): void
