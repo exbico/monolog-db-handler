@@ -17,12 +17,18 @@
   ],
   "require": {
     "php": "^8.0",
-    "ext-pdo": "*",
     "monolog/monolog": "^2.4"
   },
   "require-dev": {
+    "ext-pdo": "*",
+    "doctrine/dbal": "^3.6",
     "phpstan/phpstan": "^1.10",
+    "phpunit/phpunit": "^10.2",
     "squizlabs/php_codesniffer": "^3.7"
+  },
+  "suggest": {
+    "ext-pdo": "For using the PdoAdapter",
+    "doctrine/dbal": "For using the DoctrineDbalAdapter"
   },
   "config": {
     "optimize-autoloader": true,
@@ -31,6 +37,11 @@
   "autoload": {
     "psr-4": {
       "Exbico\\Handler\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Exbico\\Handler\\Tests\\": "tests/"
     }
   }
 }

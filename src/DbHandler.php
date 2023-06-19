@@ -1,13 +1,15 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Exbico\Handler;
 
+use Exbico\Handler\Connection\Connection;
 use Exception;
 use JsonException;
 use Monolog\Handler\HandlerInterface;
 use Monolog\Logger;
-use PDO;
-use PDOStatement;
+use Psr\Log\InvalidArgumentException;
 use Throwable;
 
 /**
@@ -16,29 +18,19 @@ use Throwable;
  */
 final class DbHandler implements HandlerInterface
 {
-    private PDOStatement|false $statement = false;
+    private DbHandlerConfig $config;
 
     /**
-     * @param PDO $connection
-     * @param int[] $levels
-     * @param string $tableName
-     * @phpstan-param Level[] $levels
+     * @param Connection $connection
+     * @param ?DbHandlerConfig $config
+     * @param bool $bubble
      */
     public function __construct(
-        private array $levels,
-        private PDO $connection,
-        string $tableName = 'log',
+        private Connection $connection,
+        ?DbHandlerConfig $config = null,
+        private bool $bubble = true,
     ) {
-        try {
-            $this->statement = $this->connection->prepare(
-                sprintf(
-                    'INSERT INTO %s (level, message, datetime, context, extra) '
-                    . 'VALUES (:level, :message, :datetime, :context, :extra)',
-                    $tableName,
-                ),
-            );
-        } catch (Throwable) {
-        }
+        $this->config = $config ?? new DbHandlerConfig();
     }
 
     /**
@@ -48,7 +40,11 @@ final class DbHandler implements HandlerInterface
      */
     public function isHandling(array $record): bool
     {
-        return in_array($record['level'], $this->levels, true);
+        try {
+            return in_array(Logger::getLevelName($record['level']), $this->config->getLevels(), true);
+        } catch (InvalidArgumentException) {
+            return false;
+        }
     }
 
     /**
@@ -58,22 +54,22 @@ final class DbHandler implements HandlerInterface
      */
     public function handle(array $record): bool
     {
-        if ($this->statement !== false && $this->isHandling($record)) {
-            $level = $this->getRecordLevel($record);
+        if ($this->isHandling($record)) {
             try {
-                $this->statement->execute(
-                    [
-                        'level'    => Logger::getLevelName($level),
-                        'message'  => $this->getRecordMessage($record),
-                        'datetime' => $this->getRecordTime($record),
-                        'context'  => $this->getRecordContext($record),
-                        'extra'    => $this->getRecordExtra($record),
-                    ],
+                $level = Logger::getLevelName($this->getRecordLevel($record));
+                $this->connection->insert(
+                    table   : $this->config->getTable($level),
+                    level   : $level,
+                    message : $this->getRecordMessage($record),
+                    datetime: $this->getRecordTime($record),
+                    context : $this->getRecordContext($record),
+                    extra   : $this->getRecordExtra($record),
                 );
             } catch (Throwable) {
+                return false;
             }
         }
-        return false;
+        return $this->bubble === false;
     }
 
     public function handleBatch(array $records): void
@@ -85,6 +81,7 @@ final class DbHandler implements HandlerInterface
 
     public function close(): void
     {
+        $this->connection->close();
     }
 
     /**
@@ -129,9 +126,9 @@ final class DbHandler implements HandlerInterface
     {
         if (!empty($record['context'])) {
             return json_encode($record['context'], JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
-        } else {
-            return null;
         }
+
+        return null;
     }
 
     /**
@@ -144,8 +141,8 @@ final class DbHandler implements HandlerInterface
     {
         if (!empty($record['extra'])) {
             return json_encode($record['extra'], JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
-        } else {
-            return null;
         }
+
+        return null;
     }
 }
