@@ -36,20 +36,23 @@ final class DbHandler implements HandlerInterface
 
     public function handle(LogRecord $record): bool
     {
-        if ($this->isHandling($record)) {
-            try {
-                $this->connection->insert(
-                    table   : $this->config->getTable($record->level),
-                    level   : $record->level->getName(),
-                    message : $record->message,
-                    datetime: $record->datetime->format(DATE_ATOM),
-                    context : $this->getRecordContext($record),
-                    extra   : $this->getRecordExtra($record),
-                );
-            } catch (Throwable) {
-                return false;
-            }
+        if (!$this->isHandling($record)) {
+            return false;
         }
+
+        try {
+            $this->connection->insert(
+                table   : $this->config->getTable($record->level),
+                level   : $record->level->getName(),
+                message : $record->message,
+                datetime: $record->datetime->format(DATE_ATOM),
+                context : $this->getRecordContext($record),
+                extra   : $this->getRecordExtra($record),
+            );
+        } catch (Throwable) {
+            return false;
+        }
+
         return $this->bubble === false;
     }
 
