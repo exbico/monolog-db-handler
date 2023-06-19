@@ -1,63 +1,56 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Exbico\Handler;
 
+use Exbico\Handler\Connection\Connection;
 use JsonException;
 use Monolog\Handler\HandlerInterface;
-use Monolog\Level;
 use Monolog\LogRecord;
-use PDO;
-use PDOStatement;
+use Psr\Log\InvalidArgumentException;
 use Throwable;
 
 final class DbHandler implements HandlerInterface
 {
-    private PDOStatement|false $statement = false;
-
     /**
-     * @param Level[] $levels
-     * @param PDO $connection
-     * @param string $tableName
+     * @param Connection $connection
+     * @param DbHandlerConfig $config
+     * @param bool $bubble
      */
     public function __construct(
-        private array $levels,
-        private readonly PDO $connection,
-        string $tableName = 'log',
+        private readonly Connection $connection,
+        private readonly DbHandlerConfig $config = new DbHandlerConfig(),
+        private bool $bubble = true,
     ) {
-        try {
-            $this->statement = $this->connection->prepare(
-                sprintf(
-                    'INSERT INTO %s (level, message, datetime, context, extra) '
-                    . 'VALUES (:level, :message, :datetime, :context, :extra)',
-                    $tableName,
-                ),
-            );
-        } catch (Throwable) {
-        }
     }
 
     public function isHandling(LogRecord $record): bool
     {
-        return in_array($record->level, $this->levels, true);
+        try {
+            return in_array($record->level->getName(), $this->config->getLevels(), true);
+        } catch (InvalidArgumentException) {
+            return false;
+        }
     }
 
     public function handle(LogRecord $record): bool
     {
-        if ($this->statement !== false && $this->isHandling($record)) {
+        if ($this->isHandling($record)) {
             try {
-                $this->statement->execute(
-                    [
-                        'level'    => $record->level->getName(),
-                        'message'  => $record->message,
-                        'datetime' => $record->datetime->format(DATE_ATOM),
-                        'context'  => $this->getRecordContext($record),
-                        'extra'    => $this->getRecordExtra($record),
-                    ],
+                $this->connection->insert(
+                    table   : $this->config->getTable($record->level),
+                    level   : $record->level->getName(),
+                    message : $record->message,
+                    datetime: $record->datetime->format(DATE_ATOM),
+                    context : $this->getRecordContext($record),
+                    extra   : $this->getRecordExtra($record),
                 );
             } catch (Throwable) {
+                return false;
             }
         }
-        return false;
+        return $this->bubble === false;
     }
 
     public function handleBatch(array $records): void
@@ -69,6 +62,7 @@ final class DbHandler implements HandlerInterface
 
     public function close(): void
     {
+        $this->connection->close();
     }
 
     /**
@@ -80,9 +74,9 @@ final class DbHandler implements HandlerInterface
     {
         if (!empty($record->context)) {
             return json_encode($record->context, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
-        } else {
-            return null;
         }
+
+        return null;
     }
 
     /**
@@ -94,8 +88,8 @@ final class DbHandler implements HandlerInterface
     {
         if (!empty($record->extra)) {
             return json_encode($record->extra, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
-        } else {
-            return null;
         }
+
+        return null;
     }
 }

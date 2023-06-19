@@ -1,4 +1,6 @@
-/composer.lock
+/.idea
+/vendor
+
+/tests/.phpunit.cache
 /.phpcs-cache
-/vendor/
-.idea/
+/composer.lock
