@@ -54,21 +54,24 @@ final class DbHandler implements HandlerInterface
      */
     public function handle(array $record): bool
     {
-        if ($this->isHandling($record)) {
-            try {
-                $level = Logger::getLevelName($this->getRecordLevel($record));
-                $this->connection->insert(
-                    table   : $this->config->getTable($level),
-                    level   : $level,
-                    message : $this->getRecordMessage($record),
-                    datetime: $this->getRecordTime($record),
-                    context : $this->getRecordContext($record),
-                    extra   : $this->getRecordExtra($record),
-                );
-            } catch (Throwable) {
-                return false;
-            }
+        if (!$this->isHandling($record)) {
+            return false;
         }
+
+        try {
+            $level = Logger::getLevelName($this->getRecordLevel($record));
+            $this->connection->insert(
+                table   : $this->config->getTable($level),
+                level   : $level,
+                message : $this->getRecordMessage($record),
+                datetime: $this->getRecordTime($record),
+                context : $this->getRecordContext($record),
+                extra   : $this->getRecordExtra($record),
+            );
+        } catch (Throwable) {
+            return false;
+        }
+
         return $this->bubble === false;
     }
 
